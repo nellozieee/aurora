@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/nellozieee/aurora/actions/workflows/ci.yml/badge.svg)](https://github.com/nellozieee/aurora/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/github/license/nellozieee/aurora)](LICENSE)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](backend/requirements.txt)
 
 Aurora is a modular, JARVIS-style personal AI assistant that runs on your
 own machine. It talks to you in natural language, remembers what matters,
