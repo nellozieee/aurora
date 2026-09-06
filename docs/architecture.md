@@ -649,6 +649,26 @@ scaffolding, only ever populated now): **131 tests, 130 passed, 1 skipped**.
   while the Windows-syntax-specific case accepts either code as long as no
   data leaks. Running the full suite against the dockerized backend (not
   just the native one) is what surfaced this.
+- **A second instance of the same class of bug, this time only caught by
+  real CI** (added after pushing to GitHub and setting up
+  `.github/workflows/ci.yml`): `tests/unit/test_path_validation.py`'s
+  `test_absolute_path_outside_allowed_root_is_blocked` hardcoded
+  `r"C:\Windows\System32\drivers\etc\hosts"` and asserted
+  `resolve_safe_path()` raises `PathSecurityError`. This is a *unit* test
+  that calls the function directly -- no server, no Docker -- so it runs
+  on whatever OS pytest itself executes on. Locally that's always been
+  Windows, where the assertion holds; on the GitHub Actions Linux runner,
+  the same string resolves as a harmless relative filename (confirmed by
+  reproducing directly: `resolve_safe_path(r"C:\Windows\...", settings)`
+  inside the actual Linux container returned a path *inside* the allowed
+  root instead of raising). Every previous verification of this project's
+  Linux behavior went through the dockerized backend's HTTP API, which
+  never exercises this function as a *unit* call on Linux -- CI's
+  "backend" job does, because it runs pytest directly on the Ubuntu
+  runner. Fixed by rewriting the test to build a real absolute path
+  outside the root using `tmp_path.parent`, portable to any OS, instead
+  of hardcoding Windows syntax; re-verified passing both natively inside
+  the Linux container directly and via the full suite.
 - **Full self-verification pass** (section 110): `pip check` clean,
   `ruff`/`mypy` clean, 130 pytest tests passing (1 environment-limited
   skip) against both the native *and* the fully containerized backend,

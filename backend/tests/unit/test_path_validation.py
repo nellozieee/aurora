@@ -28,9 +28,19 @@ def test_dotdot_traversal_outside_allowed_root_is_blocked(tmp_path):
 
 
 def test_absolute_path_outside_allowed_root_is_blocked(tmp_path):
+    """An absolute path pointing anywhere outside the allowed root must be
+    blocked, on any OS. Built as a real absolute path on whatever platform
+    the test runs on (tmp_path.parent / ...) rather than hardcoding
+    Windows drive-letter syntax -- on Linux, "C:\\Windows\\..." isn't
+    absolute at all (backslashes aren't path separators), so it would
+    resolve as a harmless *relative* filename under the allowed root and
+    never raise -- a portability bug, not a security one, caught by
+    actually running this suite against a Linux backend (see
+    docs/architecture.md's Phase 12 section)."""
     settings = _settings_with_root(tmp_path)
+    outside_path = tmp_path.parent / "definitely_outside" / "secret.txt"
     with pytest.raises(PathSecurityError):
-        resolve_safe_path(r"C:\Windows\System32\drivers\etc\hosts", settings)
+        resolve_safe_path(str(outside_path), settings)
 
 
 def test_absolute_path_inside_allowed_root_is_allowed(tmp_path):
