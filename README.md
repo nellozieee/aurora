@@ -174,14 +174,24 @@ check `GET /api/system/status` any time to see what's actually live.
 ### AI provider setup
 
 Set `AI_DEFAULT_PROVIDER` (and optionally `AI_FALLBACK_PROVIDER`) to
-`ollama`, `openai`, or `openrouter`. If the default provider fails, the
-fallback (if configured) is tried automatically before giving up.
+`ollama`, `openai`, `openrouter`, or `anthropic`. If the default provider
+fails, the fallback (if configured) is tried automatically before giving
+up -- verified live: an out-of-credits Anthropic account correctly fell
+back to Ollama rather than failing the request.
 
 - **OpenAI**: set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL`,
   default `gpt-4o-mini`).
 - **OpenRouter**: set `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` (no
   default -- OpenRouter hosts many models; pick one that supports tool
   calling, e.g. any recent Claude/GPT/Qwen model on the platform).
+- **Anthropic (Claude)**: set `ANTHROPIC_API_KEY` (and optionally
+  `ANTHROPIC_MODEL`, default `claude-sonnet-5`). Uses Anthropic's native
+  Messages API directly (not an OpenAI-compatible shim) -- see
+  `app/ai/anthropic_provider.py` for the request/response translation.
+  Needs a funded account (Plans & Billing at
+  [console.anthropic.com](https://console.anthropic.com)); an
+  out-of-credits key fails with a clear `invalid_request_error` rather
+  than a silent hang.
 
 ### Ollama setup
 

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+from app.ai.anthropic_provider import AnthropicProvider
 from app.ai.base import AIProvider
 from app.ai.ollama_provider import OllamaProvider
 from app.ai.openai_provider import OpenAIProvider
@@ -36,6 +37,7 @@ class AIRouter:
         self._providers: dict[str, AIProvider] = {
             "openai": OpenAIProvider(settings),
             "openrouter": OpenRouterProvider(settings),
+            "anthropic": AnthropicProvider(settings),
             "ollama": OllamaProvider(settings),
         }
 

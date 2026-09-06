@@ -689,6 +689,47 @@ scaffolding, only ever populated now): **131 tests, 130 passed, 1 skipped**.
   directories (`scripts/`, `desktop/`, root `tests/`) that were empty,
   unused scaffolding left over since Phase 1.
 
+## Post-Phase-12 addition: Anthropic (Claude) provider
+
+Added a fourth `AIProvider` (`app/ai/anthropic_provider.py`), requested
+after the 12-phase build to let Aurora run on Claude instead of only
+Ollama/OpenAI/OpenRouter. Unlike those three, Anthropic's Messages API
+isn't OpenAI-compatible, so this is a real translation layer rather than
+reusing `OpenAICompatibleProvider`:
+
+- The system prompt moves from a message in the list to a separate
+  top-level `system` field.
+- Tool definitions use `input_schema` instead of a nested `function`
+  object.
+- Tool results must be merged into a single `user` message's
+  `tool_result` content blocks immediately following the assistant's
+  `tool_use` blocks -- this system's internal `ChatMessage(role="tool", ...)`
+  model represents each tool result as a separate message, so
+  `_to_anthropic_messages()` merges consecutive ones rather than sending
+  them as separate messages (which Anthropic's API rejects).
+
+9 unit tests cover this translation logic directly (no network). Verified
+live against the real API: the request reached Anthropic correctly
+(correct auth headers, endpoint, request shape) and got back a clean
+`invalid_request_error` for an out-of-credits account -- proving the
+integration itself works; `AIRouter`'s existing fallback logic correctly
+dropped to Ollama and still answered the request rather than failing it.
+Anthropic has no embeddings endpoint, so `embedding()` is intentionally
+left un-overridden (inherits the base class's `NotImplementedError`).
+
+Also enabled, per explicit request, two capabilities that ship
+off-by-default: `SECURITY_COMPUTER_CONTROL_ENABLED=true` and running the
+backend natively instead of in Docker (desktop notifications and
+computer-control both need real Windows APIs the Linux container can't
+provide -- see the Phase 12 pyautogui note above). This surfaced one test
+whose premise no longer held: `test_computer_control_stays_disabled_even_with_confirm_true`
+asserted computer control is off "in this dev environment," which stopped
+being true the moment it was deliberately turned on. Fixed by having the
+test probe the actual configured state (via the side-effect-free
+`move_mouse`) and assert the outcome consistent with whatever that is,
+rather than hardcoding an assumption -- the same lesson as the earlier
+Windows-path test bugs, applied to a runtime setting instead of an OS.
+
 ## Design principles
 
 - **No tight coupling.** AI providers, voice providers, databases, the

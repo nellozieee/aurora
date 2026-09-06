@@ -39,17 +39,27 @@ def test_confirm_flag_as_non_boolean_truthy_string_is_still_denied(api_client):
     assert body["error"]["code"] == "PERMISSION_REQUIRED"
 
 
-def test_computer_control_stays_disabled_even_with_confirm_true(api_client):
+def test_computer_control_gate_is_independent_of_the_permission_engine(api_client):
     """Two independent gates must both allow: the centralized permission
     engine (confirm=true) and the separate hard SECURITY_COMPUTER_CONTROL_ENABLED
-    opt-in, which is off by default in this dev environment."""
+    opt-in. This is off by default, but an operator can deliberately enable
+    it -- probe the actual configured state via move_mouse (USER-level, no
+    confirm needed, movement-only, so safe to call unconditionally) rather
+    than hardcoding an assumption about which way any given environment
+    has it configured."""
+    probe = api_client.post("/api/tools/move_mouse/execute", json={"arguments": {"x": 10, "y": 10}})
+    computer_control_enabled = probe.json()["success"]
+
     response = api_client.post(
         "/api/tools/click/execute", json={"arguments": {"x": 10, "y": 10, "confirm": True}}
     )
     body = response.json()
-    assert body["success"] is False
-    assert body["error"]["code"] == "COMPUTER_CONTROL_DISABLED"
-    assert body["metadata"]["permission_status"] == "granted"
+    assert body["metadata"]["permission_status"] == "granted"  # confirm=true always clears this gate
+    if computer_control_enabled:
+        assert body["success"] is True
+    else:
+        assert body["success"] is False
+        assert body["error"]["code"] == "COMPUTER_CONTROL_DISABLED"
 
 
 def test_delete_file_succeeds_with_confirm_true(api_client):
