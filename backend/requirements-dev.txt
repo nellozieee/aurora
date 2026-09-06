@@ -1,0 +1,6 @@
+# Development-only tooling -- not needed at runtime or to run the test
+# suite itself (pytest/pytest-asyncio are in requirements.txt since the
+# test suite is part of what ships). Install with:
+#   pip install -r requirements.txt -r requirements-dev.txt
+ruff>=0.8.0
+mypy>=1.13.0

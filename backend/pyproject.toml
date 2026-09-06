@@ -1,0 +1,40 @@
+[project]
+name = "aurora-backend"
+version = "0.1.0"
+description = "Aurora personal AI assistant backend"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+# Alembic migrations are generated, then hand-edited only for the specific
+# HNSW-index false-positive (see docs/architecture.md) -- not for style.
+exclude = ["app/database/migrations/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's dependency-injection idiom is `param: X = Depends(...)` -- a
+# function call as a default argument value, which B008 otherwise (rightly,
+# in general) flags as a mutable-default footgun. These are immutable
+# sentinel objects FastAPI itself resolves per-request; they are not the
+# footgun B008 exists to catch.
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Body",
+    "fastapi.Header",
+    "fastapi.Cookie",
+    "fastapi.Form",
+    "fastapi.File",
+]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
