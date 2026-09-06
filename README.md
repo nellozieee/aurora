@@ -1,5 +1,7 @@
 # Aurora
 
+[![CI](https://github.com/nellozieee/aurora/actions/workflows/ci.yml/badge.svg)](https://github.com/nellozieee/aurora/actions/workflows/ci.yml)
+
 Aurora is a modular, JARVIS-style personal AI assistant that runs on your
 own machine. It talks to you in natural language, remembers what matters,
 searches the web, reads and edits your files, writes and runs code, sees
@@ -7,12 +9,12 @@ and controls your screen when you let it, and schedules reminders and
 recurring tasks -- all through a single conversational interface, with
 every risky action gated behind an explicit, centralized permission check.
 
-It was built incrementally across 11 completed phases (foundation → AI →
+It was built incrementally across 12 completed phases (foundation → AI →
 memory → tools → agents → voice → vision → computer control → automation →
-security hardening → testing), each implemented, live-tested, and fixed
-before the next began. See [docs/architecture.md](docs/architecture.md)
-for the full phase-by-phase history, including the real bugs found and
-fixed along the way.
+security hardening → testing → finalization), each implemented,
+live-tested, and fixed before the next began. See
+[docs/architecture.md](docs/architecture.md) for the full phase-by-phase
+history, including the real bugs found and fixed along the way.
 
 > **Status:** All 12 phases complete. 130 pytest tests passing (1
 > environment-limited skip) against both the native and the fully
