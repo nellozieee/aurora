@@ -1,0 +1,141 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: aurora
+          POSTGRES_PASSWORD: aurora
+          POSTGRES_DB: aurora
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aurora -d aurora"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+asyncpg://aurora:aurora@localhost:5432/aurora
+      REDIS_URL: redis://localhost:6379/0
+      SECURITY_ALLOWED_FILESYSTEM_PATHS: ./sandbox/workspace
+      # CI has no Ollama/OpenAI configured -- E2E tests need a real AI
+      # provider and skip themselves cleanly when one isn't reachable
+      # (see backend/tests/conftest.py's require_ollama fixture).
+      AI_DEFAULT_PROVIDER: ollama
+      # The test suite itself fires many rapid sequential requests; disable
+      # the rate limiter here so CI timing doesn't produce a flaky false
+      # failure unrelated to actual correctness (it's exercised directly by
+      # its own unit/security tests regardless).
+      RATE_LIMIT_ENABLED: "false"
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        run: ruff check app tests
+
+      - name: Type-check (mypy)
+        run: mypy app --ignore-missing-imports
+
+      - name: Apply database migrations
+        run: alembic upgrade head
+
+      - name: Prepare sandbox workspace
+        run: mkdir -p sandbox/workspace
+
+      - name: Start backend
+        run: nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 > backend.log 2>&1 &
+
+      - name: Wait for backend health
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8000/api/system/health && exit 0
+            sleep 1
+          done
+          echo "Backend did not become healthy in time" >&2
+          cat backend.log
+          exit 1
+
+      - name: Run tests (unit + integration + security; E2E skips without Ollama)
+        run: pytest tests/ -v
+
+      - name: Show backend log on failure
+        if: failure()
+        run: cat backend.log
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (oxlint)
+        run: npm run lint
+
+      - name: Type-check + build
+        run: npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare .env
+        run: cp .env.example .env
+
+      - name: Build and start full stack
+        run: docker compose up -d --build postgres redis backend frontend
+
+      - name: Wait for backend health
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8000/api/system/health && exit 0
+            sleep 2
+          done
+          echo "Backend container did not become healthy in time" >&2
+          docker compose logs backend
+          exit 1
+
+      - name: Check frontend serves content
+        run: curl -sf http://localhost:4173 | grep -qi "<html"
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs
