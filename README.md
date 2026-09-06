@@ -374,6 +374,11 @@ ruff check app tests
 mypy app --ignore-missing-imports
 ```
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, testing expectations,
+and conventions this codebase has followed since Phase 1.
+
 ## License
 
 MIT -- see [LICENSE](LICENSE).
