@@ -51,8 +51,9 @@ history, including the real bugs found and fixed along the way.
   guard, sandboxed code execution, path-traversal-proof file access,
   active prompt-injection detection, per-tool audit logging, and rate
   limiting. See [docs/security.md](docs/security.md).
-- **Local or cloud AI** -- Ollama (local, no API key) by default, OpenAI or
-  OpenRouter as optional cloud providers, with automatic fallback.
+- **Local or cloud AI** -- Ollama (local, no API key) by default, with
+  OpenAI, OpenRouter, or Anthropic (Claude) as optional cloud providers and
+  automatic fallback between them.
 - **Voice** -- local speech-to-text (faster-whisper) and text-to-speech
   (pyttsx3/SAPI5), no API key required; OpenAI's hosted STT/TTS as an
   optional alternative.

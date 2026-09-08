@@ -1,8 +1,8 @@
 """AI provider interface.
 
-Every provider (OpenAI-compatible, OpenRouter, Ollama, future local models)
-implements this interface so the rest of the system never depends on a
-specific vendor's API shape.
+Every provider (OpenAI-compatible, OpenRouter, Ollama, Anthropic) implements
+this interface so the rest of the system never depends on a specific
+vendor's API shape.
 """
 from __future__ import annotations
 
